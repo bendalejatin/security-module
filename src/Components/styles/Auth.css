@@ -1,0 +1,132 @@
+/* Base styles for all screen sizes */
+.auth-container {
+  width: 90%;
+  max-width: 400px;
+  margin: 5% auto;
+  padding: 1.5rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+/* Heading */
+.auth-container h2 {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+/* Form */
+.auth-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Input fields */
+.auth-container input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.auth-container input:focus {
+  border-color: #007bff;
+}
+
+/* Buttons */
+.auth-container button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.auth-container button:hover {
+  background-color: #0056b3;
+}
+
+/* Message paragraph */
+.auth-container p {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+/* Links */
+.auth-container a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.auth-container a:hover {
+  text-decoration: underline;
+}
+
+/* Forgot password link (optional class) */
+.forgot-password {
+  display: block;
+  margin-top: 0.75rem;
+}
+
+/* Media Queries for Responsiveness */
+
+/* Small screens (<480px) */
+@media (max-width: 480px) {
+  .auth-container {
+    width: 95%;
+    padding: 1rem;
+    margin: 10% auto;
+  }
+
+  .auth-container h2 {
+    font-size: 1.25rem;
+  }
+
+  .auth-container input,
+  .auth-container button {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .auth-container p {
+    font-size: 0.75rem;
+  }
+}
+
+/* Medium screens (481px–768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .auth-container {
+    width: 80%;
+    padding: 1.25rem;
+  }
+
+  .auth-container h2 {
+    font-size: 1.75rem;
+  }
+
+  .auth-container input,
+  .auth-container button {
+    padding: 0.625rem;
+  }
+}
+
+/* Large screens (>768px) */
+@media (min-width: 769px) {
+  .auth-container {
+    width: 70%;
+    max-width: 400px;
+    padding: 1.5rem;
+  }
+}

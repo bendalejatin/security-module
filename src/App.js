@@ -1,11 +1,18 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import SecurityGuardLogin from "./Components/SecurityGuardLogin";
 import SecurityGuardSignup from "./Components/SecurityGuardSignup";
 import EntryPermissionForm from "./Components/EntryPermissionForm";
 import GuardProfile from "./Components/GuardProfile";
 import "./App.css";
+import GuardForgotPassword from "./Components/GuardForgotPassword";
+import GuardResetPassword from "./Components/GuardResetPassword";
 
 // Protected Route function (checks localStorage directly)
 const SecurityProtectedRoute = ({ children }) => {
@@ -21,7 +28,14 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/security/login" element={<SecurityGuardLogin />} />
           <Route path="/security/signup" element={<SecurityGuardSignup />} />
-          <Route path="/guard-profile" element={<GuardProfile />} />
+          <Route
+            path="/security/forgot-password"
+            element={<GuardForgotPassword />}
+          />
+          <Route
+            path="/reset-password/:token"
+            element={<GuardResetPassword />}
+          />
 
           {/* Protected Routes */}
           <Route
@@ -29,6 +43,14 @@ const App = () => {
             element={
               <SecurityProtectedRoute>
                 <EntryPermissionForm />
+              </SecurityProtectedRoute>
+            }
+          />
+          <Route
+            path="/guard-profile"
+            element={
+              <SecurityProtectedRoute>
+                <GuardProfile />
               </SecurityProtectedRoute>
             }
           />
