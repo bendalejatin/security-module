@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./styles/SecurityGuardLogin.css"; // reuse same styles
 
-const BASE_URL = "http://localhost:5000"; // Adjust to your backend
+//const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
+const BASE_URL = "https://dec-entrykart-backend.onrender.com" ; // deployment url
 
 const GuardForgotPassword = () => {
   const [email, setEmail] = useState("");

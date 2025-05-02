@@ -3,7 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./styles/GuardProfile.css"; // Reuse existing Auth.css with additional styles
 
-const BASE_URL = "http://localhost:5000"; // Match your backend URL
+//const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
+const BASE_URL = "https://dec-entrykart-backend.onrender.com" ; // deployment url
 
 const GuardProfile = () => {  
   const [profile, setProfile] = useState({
