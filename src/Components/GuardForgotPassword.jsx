@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
-import "./styles/Auth.css"; 
+import "./styles/SecurityGuardLogin.css"; // reuse same styles
 
-const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
-//const BASE_URL = "https://dec-entrykart-backend.onrender.com" ; // deployment url
+const BASE_URL = "http://localhost:5000"; // Adjust to your backend
 
 const GuardForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -12,10 +11,10 @@ const GuardForgotPassword = () => {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${BASE_URL}/api/auth/forgot-password`, { email });
-      setMessage(response.data.message);
+      const response = await axios.post(`${BASE_URL}/api/guard/forgot-password`, { email });
+      setMessage(response.data.message || "Password reset link sent to your email.");
     } catch (error) {
-      setMessage("❌ Error: " + (error.response?.data?.message || error.message));
+      setMessage(error.response?.data?.message || "Something went wrong.");
     }
   };
 
@@ -23,10 +22,19 @@ const GuardForgotPassword = () => {
     <div className="auth-container">
       <h2>🔑 Forgot Password</h2>
       <form onSubmit={handleForgotPassword}>
-        <input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <input
+          type="email"
+          placeholder="Enter your registered email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
         <button type="submit">Send Reset Link</button>
       </form>
-      <p>{message}</p>
+      {message && <p>{message}</p>}
+      <p>
+        <a href="/security/login">Back to Login</a>
+      </p>
     </div>
   );
 };

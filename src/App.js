@@ -28,14 +28,8 @@ const App = () => {
           {/* Public Routes */}
           <Route path="/security/login" element={<SecurityGuardLogin />} />
           <Route path="/security/signup" element={<SecurityGuardSignup />} />
-          <Route
-            path="/security/forgot-password"
-            element={<GuardForgotPassword />}
-          />
-          <Route
-            path="/reset-password/:token"
-            element={<GuardResetPassword />}
-          />
+          <Route path="/security/forgot-password" element={<GuardForgotPassword />} />
+          <Route path="/security/reset-password/:token" element={<GuardResetPassword />} /> 
 
           {/* Protected Routes */}
           <Route
