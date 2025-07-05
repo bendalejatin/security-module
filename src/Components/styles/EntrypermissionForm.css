@@ -1,129 +1,249 @@
-/* Container styling */
-.container {
-    max-width: 750px;
-    margin: 20px auto;
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* EntryPermissionForm.css */
+
+/* Container for the entire form and entries list */
+.entry-form-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Card for form and entries list */
+.entry-card {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Form title styling */
+.form-title {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+/* Form content container */
+.entry-form-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Form styling */
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Label styling */
+.entry-form label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Input and select fields */
+.input-field, .select-field {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #1f2937;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus, .select-field:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* Textarea specific styling */
+.input-field[type="textarea"] {
+  resize: none;
+  height: 80px;
+}
+
+/* Disabled select field */
+.select-field:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Decision buttons container */
+.decision-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+/* Submit button (Add Entry) */
+.submit-btn.allow-btn {
+  background-color: #10b981;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-btn.allow-btn:hover {
+  background-color: #059669;
+}
+
+/* Entries list section */
+.entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Individual entry item */
+.entry-item {
+  background-color: #ffffff;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Entry details */
+.entry-details {
+  flex: 1;
+}
+
+.entry-details h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.entry-details p {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin: 0.25rem 0;
+}
+
+/* Status badge styling */
+.status {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status.pending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.status.allow {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.status.deny {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* Entry actions buttons */
+.entry-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.submit-btn.allow-btn {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.submit-btn.allow-btn:hover {
+  background-color: #059669;
+}
+
+.submit-btn.deny-btn {
+  background-color: #ef4444;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.submit-btn.deny-btn:hover {
+  background-color: #dc2626;
+}
+
+.delete-btn {
+  background-color: #6b7280;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.delete-btn:hover {
+  background-color: #4b5563;
+}
+
+/* Search input */
+.entry-form-content input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+/* Loading state */
+.loading {
+  text-align: center;
+  font-size: 1.25rem;
+  color: #374151;
+  padding: 2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .entry-form-container {
+    padding: 1rem;
+    margin: 1rem;
   }
-  
-  /* Form Section */
-  .form-group {
-    display: flex;
+
+  .entry-item {
     flex-direction: column;
-    gap: 15px;
+    gap: 1rem;
   }
-  
-  /* Title */
-  .title {
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20px;
-  }
-  
-  /* Form Fields */
-  .input-field,
-  .textarea-field {
-    width: 95%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 16px;
-    margin-bottom: 8px;
-  }
-  
-  .textarea-field {
-    resize: none;
-    height: 80px;
-  }
-  
-  .input-field:focus,
-  .textarea-field:focus {
-    border-color: #28a745;
-    outline: none;
-    box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
-  }
-  
-  /* Add Button */
-  .add-btn {
+
+  .entry-actions {
     width: 100%;
-    background: #28a745;
-    color: white;
-    padding: 12px;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    justify-content: space-between;
   }
-  
-  .add-btn:hover {
-    background: #218838;
+
+  .submit-btn, .delete-btn {
+    flex: 1;
   }
-  
-  /* Entries List Section */
-  .entries-list {
-    margin-top: 20px;
-  }
-  
-  /* Subtitle */
-  .sub-title {
-    text-align: center;
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 15px;
-  }
-  
-  /* Entry Styling */
-  .entry {
-    background: #ffffff;
-    padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 15px;
-  }
-  
-  .entry p {
-    margin: 5px 0;
-    font-size: 16px;
-  }
-  
-  /* Buttons inside each entry */
-  .buttons {
-    display: flex;
-    gap: 5px;
-    margin-top: 10px;
-  }
-  
-  .edit-btn {
-    background: #007bff;
-    color: white;
-    padding: 6px 12px;
-    font-size: 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .edit-btn:hover {
-    background: #0056b3;
-  }
-  
-  .delete-btn {
-    background: #dc3545;
-    color: white;
-    padding: 6px 12px;
-    font-size: 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-  
-  .delete-btn:hover {
-    background: #c82333;
-  }
-  
+}
