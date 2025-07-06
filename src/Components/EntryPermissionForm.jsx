@@ -5,8 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "./styles/EntrypermissionForm.css";
 import Navbar from "./Navbar";
 
-// const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
-const BASE_URL = "https://dec-entrykart-backend.onrender.com"; // deployment url
+const BASE_URL = "https://dec-entrykart-backend.onrender.com"; // Deployment URL
 
 const EntryPermissionForm = () => {
   const [entries, setEntries] = useState([]);
@@ -23,31 +22,52 @@ const EntryPermissionForm = () => {
   const [dateTime, setDateTime] = useState("");
   const [expiry, setExpiry] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saveLoading, setSaveLoading] = useState(false); // Added for save operation
+  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
 
-  const adminEmail = localStorage.getItem("adminEmail");
-  const superadminEmail = "dec@gmail.com"; // Superadmin email for API queries
+  const guardEmail = localStorage.getItem("guardEmail");
+  const guardToken = localStorage.getItem("guardToken");
 
   useEffect(() => {
-    if (!adminEmail) {
+    if (!guardEmail || !guardToken) {
       setError("Please log in to access entry permissions.");
       setLoading(false);
+      window.location.href = "/security/login"; // Redirect to login if not authenticated
       return;
     }
 
-    fetchSocieties();
-    fetchUsers();
-    fetchEntries();
-    checkExpiringPermissions();
-  }, [adminEmail, superadminEmail]); // Added superadminEmail to dependencies
+    // Verify token by fetching guard profile
+    const verifyToken = async () => {
+      try {
+        await axios.get(`${BASE_URL}/api/guard/guard-profile`, {
+          headers: { Authorization: `Bearer ${guardToken}` },
+        });
+        // Token is valid, proceed to fetch data
+        fetchSocieties();
+        fetchUsers();
+        fetchEntries();
+        checkExpiringPermissions();
+      } catch (error) {
+        console.error("Token verification failed:", error);
+        setError("Invalid or expired session. Please log in again.");
+        setLoading(false);
+        localStorage.removeItem("guardToken");
+        localStorage.removeItem("guardEmail");
+        localStorage.removeItem("securityToken");
+        window.location.href = "/security/login";
+      }
+    };
+
+    verifyToken();
+  }, [guardEmail, guardToken]);
 
   const fetchSocieties = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/societies?email=${superadminEmail}` // Fixed template literal
+        `${BASE_URL}/api/societies?email=${guardEmail}`,
+        { headers: { Authorization: `Bearer ${guardToken}` } }
       );
       setSocieties(response.data);
       setLoading(false);
@@ -61,7 +81,8 @@ const EntryPermissionForm = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/users?email=${superadminEmail}` // Fixed template literal
+        `${BASE_URL}/api/users?email=${guardEmail}`,
+        { headers: { Authorization: `Bearer ${guardToken}` } }
       );
       setUsers(response.data);
       setLoading(false);
@@ -75,8 +96,13 @@ const EntryPermissionForm = () => {
   const fetchEntries = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/entries?email=${superadminEmail}`, // Fixed template literal
-        { headers: { "Cache-Control": "no-cache" } } // Prevent caching
+        `${BASE_URL}/api/entries?email=${guardEmail}`,
+        {
+          headers: {
+            Authorization: `Bearer ${guardToken}`,
+            "Cache-Control": "no-cache",
+          },
+        }
       );
       setEntries(response.data);
       setLoading(false);
@@ -89,15 +115,17 @@ const EntryPermissionForm = () => {
 
   const checkExpiringPermissions = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/entries/expiring-soon`); // Fixed template literal
+      const res = await axios.get(`${BASE_URL}/api/entries/expiring-soon`, {
+        headers: { Authorization: `Bearer ${guardToken}` },
+      });
       if (res.data.length > 0) {
         res.data.forEach((entry) => {
-          toast.warn(`Permission for ${entry.name} is expiring soon!`); // Fixed template literal
+          toast.warn(`Permission for ${entry.name} is expiring soon!`);
         });
       }
     } catch (error) {
       console.error("Error checking expiring permissions:", error);
-      toast.error("Failed to check expiring permissions"); // Added user feedback
+      toast.error("Failed to check expiring permissions");
     }
   };
 
@@ -120,7 +148,8 @@ const EntryPermissionForm = () => {
     setEmail(user ? user.email : "");
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault(); // Prevent default form submission
     if (
       !name ||
       !selectedSociety ||
@@ -135,8 +164,9 @@ const EntryPermissionForm = () => {
       return;
     }
 
-    if (!adminEmail) {
-      toast.error("Admin email is missing. Please log in.");
+    if (!guardEmail) {
+      toast.error("Guard email is missing. Please log in.");
+      window.location.href = "/security/login";
       return;
     }
 
@@ -162,23 +192,31 @@ const EntryPermissionForm = () => {
       visitorType,
       status,
       societyId: selectedSociety,
-      adminEmail,
+      guardEmail, // Use guardEmail instead of adminEmail
     };
 
-    setSaveLoading(true); // Set loading state
+    setSaveLoading(true);
     try {
       if (editingId) {
-        const res = await axios.put(`${BASE_URL}/api/entries/${editingId}`, payload); // Fixed template literal
-        setEntries(entries.map((entry) => (entry._id === editingId ? res.data : entry)));
+        const res = await axios.put(
+          `${BASE_URL}/api/entries/${editingId}`,
+          payload,
+          { headers: { Authorization: `Bearer ${guardToken}` } }
+        );
+        setEntries(
+          entries.map((entry) => (entry._id === editingId ? res.data : entry))
+        );
         toast.success("Entry updated successfully!");
         setEditingId(null);
       } else {
-        const res = await axios.post(`${BASE_URL}/api/entries`, payload);
+        const res = await axios.post(`${BASE_URL}/api/entries`, payload, {
+          headers: { Authorization: `Bearer ${guardToken}` },
+        });
         setEntries([...entries, res.data]);
         toast.success("Entry added successfully!");
       }
       resetForm();
-      await fetchEntries(); // Ensure UI reflects latest data
+      await fetchEntries(); // Refresh entries
     } catch (error) {
       console.error("Error saving entry:", error);
       if (error.response) {
@@ -193,7 +231,7 @@ const EntryPermissionForm = () => {
         toast.error("Error saving entry: " + error.message);
       }
     } finally {
-      setSaveLoading(false); // Reset loading state
+      setSaveLoading(false);
     }
   };
 
@@ -208,16 +246,22 @@ const EntryPermissionForm = () => {
     setVisitorType(entry.visitorType || "");
     setStatus(entry.status || "pending");
     setDescription(entry.description || "");
-    setDateTime(entry.dateTime ? new Date(entry.dateTime).toISOString().slice(0, 16) : "");
+    setDateTime(
+      entry.dateTime ? new Date(entry.dateTime).toISOString().slice(0, 16) : ""
+    );
     setExpiry(
-      entry.additionalDateTime ? new Date(entry.additionalDateTime).toISOString().slice(0, 16) : ""
+      entry.additionalDateTime
+        ? new Date(entry.additionalDateTime).toISOString().slice(0, 16)
+        : ""
     );
     setEditingId(entry._id);
   };
 
   const getSocietyId = (societyIdValue) => {
-    if (!societyIdValue) return ""; // Added null check
-    return typeof societyIdValue === "string" ? societyIdValue : societyIdValue?._id || "";
+    if (!societyIdValue) return "";
+    return typeof societyIdValue === "string"
+      ? societyIdValue
+      : societyIdValue?._id || "";
   };
 
   const handleDelete = async (id) => {
@@ -226,13 +270,18 @@ const EntryPermissionForm = () => {
     }
 
     try {
-      await axios.delete(`${BASE_URL}/api/entries/${id}`); // Fixed template literal
+      await axios.delete(`${BASE_URL}/api/entries/${id}`, {
+        headers: { Authorization: `Bearer ${guardToken}` },
+      });
       setEntries(entries.filter((entry) => entry._id !== id));
       toast.success("Entry deleted successfully!");
-      await fetchEntries(); // Ensure UI reflects latest data
+      await fetchEntries(); // Refresh entries
     } catch (error) {
       console.error("Error deleting entry:", error);
-      toast.error("Error deleting entry: " + (error.response?.data?.message || error.message));
+      toast.error(
+        "Error deleting entry: " +
+          (error.response?.data?.message || error.message)
+      );
     }
   };
 
@@ -292,7 +341,7 @@ const EntryPermissionForm = () => {
         <div className="entry-card">
           <div className="form-title">Entry Permission Form</div>
           <div className="entry-form-content">
-            <form className="entry-form" onSubmit={handleSave}> {/* Updated to use form submission */}
+            <form className="entry-form" onSubmit={handleSave}>
               <label htmlFor="name">Name *</label>
               <input
                 type="text"
@@ -417,11 +466,15 @@ const EntryPermissionForm = () => {
 
               <div className="decision-buttons">
                 <button
-                  type="submit" // Changed to submit to use form submission
+                  type="submit"
                   className="submit-btn"
-                  disabled={saveLoading} // Disable during save
+                  disabled={saveLoading}
                 >
-                  {saveLoading ? "Saving..." : editingId ? "Update Entry" : "Add Entry"}
+                  {saveLoading
+                    ? "Saving..."
+                    : editingId
+                    ? "Update Entry"
+                    : "Add Entry"}
                 </button>
                 {editingId && (
                   <button
@@ -464,16 +517,25 @@ const EntryPermissionForm = () => {
                           (soc) => soc._id === getSocietyId(entry.societyId)
                         )?.name || "N/A"}
                       </p>
-                      <p><strong>Flat Number:</strong> {entry.flatNumber}</p>
-                      <p><strong>Email:</strong> {entry.email || "N/A"}</p>
-                      <p><strong>Visitor Type:</strong> {entry.visitorType}</p>
+                      <p>
+                        <strong>Flat Number:</strong> {entry.flatNumber}
+                      </p>
+                      <p>
+                        <strong>Email:</strong> {entry.email || "N/A"}
+                      </p>
+                      <p>
+                        <strong>Visitor Type:</strong> {entry.visitorType}
+                      </p>
                       <p>
                         <strong>Status:</strong>{" "}
                         <span className={`status-${entry.status}`}>
-                          {entry.status?.charAt(0).toUpperCase() + entry.status?.slice(1)}
+                          {entry.status?.charAt(0).toUpperCase() +
+                            entry.status?.slice(1)}
                         </span>
                       </p>
-                      <p><strong>Description:</strong> {entry.description}</p>
+                      <p>
+                        <strong>Description:</strong> {entry.description}
+                      </p>
                       <p>
                         <strong>Date & Time:</strong>{" "}
                         {new Date(entry.dateTime).toLocaleString()}
