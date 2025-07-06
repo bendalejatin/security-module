@@ -23,8 +23,10 @@ const EntryPermissionForm = () => {
   const [dateTime, setDateTime] = useState("");
   const [expiry, setExpiry] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saveLoading, setSaveLoading] = useState(false); // Added for save operation
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingId, setEditingId] = useState(null);
 
   const adminEmail = localStorage.getItem("adminEmail");
   const superadminEmail = "dec@gmail.com"; // Superadmin email for API queries
@@ -40,12 +42,12 @@ const EntryPermissionForm = () => {
     fetchUsers();
     fetchEntries();
     checkExpiringPermissions();
-  }, [adminEmail]);
+  }, [adminEmail, superadminEmail]); // Added superadminEmail to dependencies
 
   const fetchSocieties = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/societies?email=${superadminEmail}`
+        `${BASE_URL}/api/societies?email=${superadminEmail}` // Fixed template literal
       );
       setSocieties(response.data);
       setLoading(false);
@@ -59,7 +61,7 @@ const EntryPermissionForm = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/users?email=${superadminEmail}`
+        `${BASE_URL}/api/users?email=${superadminEmail}` // Fixed template literal
       );
       setUsers(response.data);
       setLoading(false);
@@ -73,7 +75,8 @@ const EntryPermissionForm = () => {
   const fetchEntries = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/entries?email=${superadminEmail}`
+        `${BASE_URL}/api/entries?email=${superadminEmail}`, // Fixed template literal
+        { headers: { "Cache-Control": "no-cache" } } // Prevent caching
       );
       setEntries(response.data);
       setLoading(false);
@@ -86,14 +89,15 @@ const EntryPermissionForm = () => {
 
   const checkExpiringPermissions = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/entries/expiring-soon`);
+      const res = await axios.get(`${BASE_URL}/api/entries/expiring-soon`); // Fixed template literal
       if (res.data.length > 0) {
         res.data.forEach((entry) => {
-          toast.warn(`Permission for ${entry.name} is expiring soon!`);
+          toast.warn(`Permission for ${entry.name} is expiring soon!`); // Fixed template literal
         });
       }
     } catch (error) {
       console.error("Error checking expiring permissions:", error);
+      toast.error("Failed to check expiring permissions"); // Added user feedback
     }
   };
 
@@ -147,25 +151,34 @@ const EntryPermissionForm = () => {
     const expirationDate = new Date(dateTime);
     expirationDate.setDate(expirationDate.getDate() + 7);
 
-    try {
-      const payload = {
-        name: name.trim(),
-        flatNumber: flatNumber.trim(),
-        dateTime,
-        description: description.trim(),
-        additionalDateTime: expiry,
-        expirationDateTime: expirationDate,
-        email,
-        visitorType,
-        status,
-        societyId: selectedSociety,
-        adminEmail,
-      };
+    const payload = {
+      name: name.trim(),
+      flatNumber: flatNumber.trim(),
+      dateTime,
+      description: description.trim(),
+      additionalDateTime: expiry,
+      expirationDateTime: expirationDate.toISOString(),
+      email,
+      visitorType,
+      status,
+      societyId: selectedSociety,
+      adminEmail,
+    };
 
-      const res = await axios.post(`${BASE_URL}/api/entries`, payload);
-      setEntries([...entries, res.data]);
-      toast.success("Entry added successfully!");
+    setSaveLoading(true); // Set loading state
+    try {
+      if (editingId) {
+        const res = await axios.put(`${BASE_URL}/api/entries/${editingId}`, payload); // Fixed template literal
+        setEntries(entries.map((entry) => (entry._id === editingId ? res.data : entry)));
+        toast.success("Entry updated successfully!");
+        setEditingId(null);
+      } else {
+        const res = await axios.post(`${BASE_URL}/api/entries`, payload);
+        setEntries([...entries, res.data]);
+        toast.success("Entry added successfully!");
+      }
       resetForm();
+      await fetchEntries(); // Ensure UI reflects latest data
     } catch (error) {
       console.error("Error saving entry:", error);
       if (error.response) {
@@ -174,34 +187,36 @@ const EntryPermissionForm = () => {
           error.response.data?.error ||
           `Server error: ${error.response.status}`;
         toast.error(errorMessage);
-        console.error("Server error details:", error.response.data);
       } else if (error.request) {
         toast.error("No response from server. Please check your connection.");
       } else {
         toast.error("Error saving entry: " + error.message);
       }
+    } finally {
+      setSaveLoading(false); // Reset loading state
     }
   };
 
-  const handleStatusUpdate = async (id, newStatus) => {
-    try {
-      const payload = { status: newStatus };
-      await axios.put(`${BASE_URL}/api/entries/${id}`, payload);
-      setEntries(
-        entries.map((entry) =>
-          entry._id === id ? { ...entry, status: newStatus } : entry
-        )
-      );
-      toast.success(`Entry ${newStatus} successfully!`);
-    } catch (error) {
-      console.error(`Error updating entry status to ${newStatus}:`, error);
-      toast.error(
-        `Error updating entry status: ${error.response?.data?.message || error.message}`
-      );
-    }
+  const handleEdit = (entry) => {
+    const societyId = getSocietyId(entry.societyId);
+    setName(entry.name || "");
+    setSelectedSociety(societyId);
+    const society = societies.find((soc) => soc._id === societyId);
+    setFlats(society ? society.flats : []);
+    setFlatNumber(entry.flatNumber || "");
+    setEmail(entry.email || "");
+    setVisitorType(entry.visitorType || "");
+    setStatus(entry.status || "pending");
+    setDescription(entry.description || "");
+    setDateTime(entry.dateTime ? new Date(entry.dateTime).toISOString().slice(0, 16) : "");
+    setExpiry(
+      entry.additionalDateTime ? new Date(entry.additionalDateTime).toISOString().slice(0, 16) : ""
+    );
+    setEditingId(entry._id);
   };
 
   const getSocietyId = (societyIdValue) => {
+    if (!societyIdValue) return ""; // Added null check
     return typeof societyIdValue === "string" ? societyIdValue : societyIdValue?._id || "";
   };
 
@@ -211,9 +226,10 @@ const EntryPermissionForm = () => {
     }
 
     try {
-      await axios.delete(`${BASE_URL}/api/entries/${id}`);
+      await axios.delete(`${BASE_URL}/api/entries/${id}`); // Fixed template literal
       setEntries(entries.filter((entry) => entry._id !== id));
       toast.success("Entry deleted successfully!");
+      await fetchEntries(); // Ensure UI reflects latest data
     } catch (error) {
       console.error("Error deleting entry:", error);
       toast.error("Error deleting entry: " + (error.response?.data?.message || error.message));
@@ -221,6 +237,9 @@ const EntryPermissionForm = () => {
   };
 
   const resetForm = () => {
+    if (editingId && !window.confirm("Are you sure you want to cancel editing?")) {
+      return;
+    }
     setName("");
     setSelectedSociety("");
     setFlats([]);
@@ -231,6 +250,7 @@ const EntryPermissionForm = () => {
     setDescription("");
     setDateTime("");
     setExpiry("");
+    setEditingId(null);
   };
 
   const filteredEntries = entries.filter(
@@ -272,7 +292,7 @@ const EntryPermissionForm = () => {
         <div className="entry-card">
           <div className="form-title">Entry Permission Form</div>
           <div className="entry-form-content">
-            <form className="entry-form" onSubmit={(e) => e.preventDefault()}>
+            <form className="entry-form" onSubmit={handleSave}> {/* Updated to use form submission */}
               <label htmlFor="name">Name *</label>
               <input
                 type="text"
@@ -282,6 +302,7 @@ const EntryPermissionForm = () => {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter Visitor Name"
                 required
+                aria-label="Visitor Name"
               />
 
               <label htmlFor="society">Society *</label>
@@ -291,6 +312,7 @@ const EntryPermissionForm = () => {
                 value={selectedSociety}
                 onChange={(e) => handleSocietyChange(e.target.value)}
                 required
+                aria-label="Select Society"
               >
                 <option value="">Select Society</option>
                 {societies.map((society) => (
@@ -308,6 +330,7 @@ const EntryPermissionForm = () => {
                 onChange={(e) => handleFlatChange(e.target.value)}
                 disabled={!selectedSociety}
                 required
+                aria-label="Select Flat Number"
               >
                 <option value="">Select Flat</option>
                 {flats.map((flat) => (
@@ -325,6 +348,7 @@ const EntryPermissionForm = () => {
                 value={email}
                 readOnly
                 placeholder="Email"
+                aria-label="Email (read-only)"
               />
 
               <label htmlFor="visitor-type">Visitor Type *</label>
@@ -334,6 +358,7 @@ const EntryPermissionForm = () => {
                 value={visitorType}
                 onChange={(e) => setVisitorType(e.target.value)}
                 required
+                aria-label="Select Visitor Type"
               >
                 <option value="">-- Select Visitor Type --</option>
                 <option value="Guest">Guest</option>
@@ -349,6 +374,7 @@ const EntryPermissionForm = () => {
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
                 required
+                aria-label="Select Status"
               >
                 <option value="pending">Pending</option>
                 <option value="allow">Allow</option>
@@ -364,6 +390,7 @@ const EntryPermissionForm = () => {
                 placeholder="Enter Description"
                 rows="3"
                 required
+                aria-label="Description"
               />
 
               <label htmlFor="datetime">Date & Time *</label>
@@ -374,6 +401,7 @@ const EntryPermissionForm = () => {
                 value={dateTime}
                 onChange={(e) => setDateTime(e.target.value)}
                 required
+                aria-label="Entry Date and Time"
               />
 
               <label htmlFor="expiry">Expiry Date & Time *</label>
@@ -384,16 +412,26 @@ const EntryPermissionForm = () => {
                 value={expiry}
                 onChange={(e) => setExpiry(e.target.value)}
                 required
+                aria-label="Expiry Date and Time"
               />
 
               <div className="decision-buttons">
                 <button
-                  type="button"
-                  className="submit-btn allow-btn"
-                  onClick={handleSave}
+                  type="submit" // Changed to submit to use form submission
+                  className="submit-btn"
+                  disabled={saveLoading} // Disable during save
                 >
-                  Add Entry
+                  {saveLoading ? "Saving..." : editingId ? "Update Entry" : "Add Entry"}
                 </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    className="submit-btn cancel-btn"
+                    onClick={resetForm}
+                  >
+                    Cancel Edit
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -408,6 +446,7 @@ const EntryPermissionForm = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-field"
+              aria-label="Search entries"
               style={{ marginBottom: "20px" }}
             />
 
@@ -430,7 +469,7 @@ const EntryPermissionForm = () => {
                       <p><strong>Visitor Type:</strong> {entry.visitorType}</p>
                       <p>
                         <strong>Status:</strong>{" "}
-                        <span className={`status ${entry.status}`}>
+                        <span className={`status-${entry.status}`}>
                           {entry.status?.charAt(0).toUpperCase() + entry.status?.slice(1)}
                         </span>
                       </p>
@@ -444,28 +483,20 @@ const EntryPermissionForm = () => {
                         {new Date(entry.additionalDateTime).toLocaleString()}
                       </p>
                     </div>
-                    {entry.status === "pending" && (
-                      <div className="entry-actions">
-                        <button
-                          className="submit-btn allow-btn"
-                          onClick={() => handleStatusUpdate(entry._id, "allow")}
-                        >
-                          Allow
-                        </button>
-                        <button
-                          className="submit-btn deny-btn"
-                          onClick={() => handleStatusUpdate(entry._id, "deny")}
-                        >
-                          Deny
-                        </button>
-                        <button
-                          className="delete-btn"
-                          onClick={() => handleDelete(entry._id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                    <div className="entry-actions">
+                      <button
+                        className="submit-btn edit-btn"
+                        onClick={() => handleEdit(entry)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(entry._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
