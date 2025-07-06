@@ -6,7 +6,7 @@ import "./styles/EntrypermissionForm.css";
 import Navbar from "./Navbar";
 
 const BASE_URL = "https://dec-entrykart-backend.onrender.com"; // Deployment URL
-const SUPERADMIN_EMAIL = "dec@gmail.com"; // Fallback email for society/user fetching
+const SUPERADMIN_EMAIL = "dec@gmail.com"; // Fallback email for fetching societies and entries
 
 const EntryPermissionForm = () => {
   const [entries, setEntries] = useState([]);
@@ -41,15 +41,16 @@ const EntryPermissionForm = () => {
 
     const verifyToken = async () => {
       try {
-        await axios.get(`${BASE_URL}/api/guard/guard-profile`, {
+        const response = await axios.get(`${BASE_URL}/api/guard/guard-profile`, {
           headers: { Authorization: `Bearer ${guardToken}` },
         });
+        console.log("Guard profile response:", response.data); // Debugging
         fetchSocieties();
         fetchUsers();
         fetchEntries();
         checkExpiringPermissions();
       } catch (error) {
-        console.error("Token verification failed:", error);
+        console.error("Token verification failed:", error.response || error);
         setError("Invalid or expired session. Please log in again.");
         setLoading(false);
         localStorage.removeItem("guardToken");
@@ -68,7 +69,10 @@ const EntryPermissionForm = () => {
         `${BASE_URL}/api/societies?email=${SUPERADMIN_EMAIL}`,
         { headers: { Authorization: `Bearer ${guardToken}` } }
       );
-      console.log("Societies response:", response.data); // Debugging log
+      console.log("Societies response:", response.data); // Debugging
+      if (!Array.isArray(response.data)) {
+        throw new Error("Invalid societies data format");
+      }
       setSocieties(response.data);
       setLoading(false);
     } catch (error) {
@@ -84,12 +88,15 @@ const EntryPermissionForm = () => {
         `${BASE_URL}/api/users?email=${SUPERADMIN_EMAIL}`,
         { headers: { Authorization: `Bearer ${guardToken}` } }
       );
-      console.log("Users response:", response.data); // Debugging log
+      console.log("Users response:", response.data); // Debugging
+      if (!Array.isArray(response.data)) {
+        throw new Error("Invalid users data format");
+      }
       setUsers(response.data);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching users:", error.response || error);
-      setError("Failed to fetch user data: " + (error.response?.data?.message || error.message));
+      setError("Failed to fetch users: " + (error.response?.data?.message || error.message));
       setLoading(false);
     }
   };
@@ -97,7 +104,7 @@ const EntryPermissionForm = () => {
   const fetchEntries = async () => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/entries?email=${guardEmail}`,
+        `${BASE_URL}/api/entries?email=${SUPERADMIN_EMAIL}`,
         {
           headers: {
             Authorization: `Bearer ${guardToken}`,
@@ -105,7 +112,10 @@ const EntryPermissionForm = () => {
           },
         }
       );
-      console.log("Entries response:", response.data); // Debugging log
+      console.log("Entries response:", response.data); // Debugging
+      if (!Array.isArray(response.data)) {
+        throw new Error("Invalid entries data format");
+      }
       setEntries(response.data);
       setLoading(false);
     } catch (error) {
@@ -120,7 +130,7 @@ const EntryPermissionForm = () => {
       const res = await axios.get(`${BASE_URL}/api/entries/expiring-soon`, {
         headers: { Authorization: `Bearer ${guardToken}` },
       });
-      console.log("Expiring permissions response:", res.data); // Debugging log
+      console.log("Expiring permissions response:", res.data); // Debugging
       if (res.data.length > 0) {
         res.data.forEach((entry) => {
           toast.warn(`Permission for ${entry.name} is expiring soon!`);
@@ -548,9 +558,7 @@ const EntryPermissionForm = () => {
                         {new Date(entry.additionalDateTime).toLocaleString()}
                       </p>
                     </div>
-                    <div className="entry-actions
-
-">
+                    <div className="entry-actions">
                       <button
                         className="submit-btn edit-btn"
                         onClick={() => handleEdit(entry)}
@@ -558,7 +566,7 @@ const EntryPermissionForm = () => {
                         Edit
                       </button>
                       <button
-                        className="delete-btn" // Fixed typo
+                        className="delete-btn"
                         onClick={() => handleDelete(entry._id)}
                       >
                         Delete
