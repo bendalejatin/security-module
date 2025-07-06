@@ -34,17 +34,15 @@ const EntryPermissionForm = () => {
     if (!guardEmail || !guardToken) {
       setError("Please log in to access entry permissions.");
       setLoading(false);
-      window.location.href = "/security/login"; // Redirect to login if not authenticated
+      window.location.href = "/security/login";
       return;
     }
 
-    // Verify token by fetching guard profile
     const verifyToken = async () => {
       try {
         await axios.get(`${BASE_URL}/api/guard/guard-profile`, {
           headers: { Authorization: `Bearer ${guardToken}` },
         });
-        // Token is valid, proceed to fetch data
         fetchSocieties();
         fetchUsers();
         fetchEntries();
@@ -149,7 +147,7 @@ const EntryPermissionForm = () => {
   };
 
   const handleSave = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     if (
       !name ||
       !selectedSociety ||
@@ -192,7 +190,7 @@ const EntryPermissionForm = () => {
       visitorType,
       status,
       societyId: selectedSociety,
-      guardEmail, // Use guardEmail instead of adminEmail
+      adminEmail: guardEmail, // Use guardEmail as adminEmail to mimic localhost
     };
 
     setSaveLoading(true);
@@ -216,7 +214,7 @@ const EntryPermissionForm = () => {
         toast.success("Entry added successfully!");
       }
       resetForm();
-      await fetchEntries(); // Refresh entries
+      await fetchEntries();
     } catch (error) {
       console.error("Error saving entry:", error);
       if (error.response) {
@@ -275,7 +273,7 @@ const EntryPermissionForm = () => {
       });
       setEntries(entries.filter((entry) => entry._id !== id));
       toast.success("Entry deleted successfully!");
-      await fetchEntries(); // Refresh entries
+      await fetchEntries();
     } catch (error) {
       console.error("Error deleting entry:", error);
       toast.error(
@@ -553,7 +551,7 @@ const EntryPermissionForm = () => {
                         Edit
                       </button>
                       <button
-                        className="delete-btn"
+                        className="delete Midjourney prompt: A futuristic cityscape at dusk with neon lights and flying vehicles, ultra-realistic, cinematic lighting, highly detailed, 8k resolution-btn"
                         onClick={() => handleDelete(entry._id)}
                       >
                         Delete
