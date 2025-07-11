@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "./styles/EntrypermissionForm.css";
+import "./styles/EntrypermissionForm.css"; // Ensure the CSS file is correctly named
 import Navbar from "./Navbar";
 
 // const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
@@ -23,81 +23,156 @@ const EntryPermissionForm = () => {
   const [dateTime, setDateTime] = useState("");
   const [expiry, setExpiry] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saveLoading, setSaveLoading] = useState(false); // Added for save operation
+  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
 
-  const adminEmail = localStorage.getItem("adminEmail");
-  const superadminEmail = "dec@gmail.com"; // Superadmin email for API queries
+  const guardEmail = localStorage.getItem("guardEmail");
 
   useEffect(() => {
-    if (!adminEmail) {
+    console.log("Guard email:", guardEmail);
+    if (!guardEmail) {
       setError("Please log in to access entry permissions.");
       setLoading(false);
       return;
     }
 
     fetchSocieties();
-    fetchUsers();
     fetchEntries();
     checkExpiringPermissions();
-  }, [adminEmail, superadminEmail]); // Added superadminEmail to dependencies
+  }, [guardEmail]);
 
-  const fetchSocieties = async () => {
+  useEffect(() => {
+    if (selectedSociety) {
+      fetchUsers();
+    } else {
+      setUsers([]);
+      setFlats([]);
+      setFlatNumber("");
+      setEmail("");
+    }
+  }, [selectedSociety]);
+
+  const fetchSocieties = async (retryCount = 3) => {
     try {
-      const response = await axios.get(
-        `${BASE_URL}/api/societies?email=${superadminEmail}` // Fixed template literal
-      );
-      setSocieties(response.data);
-      setLoading(false);
+      const response = await axios.get(`${BASE_URL}/api/societies?email=${guardEmail}`, {
+        headers: { "Cache-Control": "no-cache" },
+      });
+      console.log("Fetched societies:", response.data);
+      setSocieties(response.data || []);
+      if (response.data.length === 0) {
+        setError("No societies found. Contact the superadmin.");
+      }
     } catch (error) {
-      console.error("Error fetching societies:", error);
-      setError("Failed to fetch societies.");
+      console.error("Error fetching societies:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      if (retryCount > 0) {
+        console.log(`Retrying fetchSocieties... (${retryCount} attempts left)`);
+        setTimeout(() => fetchSocieties(retryCount - 1), 2000);
+      } else {
+        let errorMessage = "Failed to fetch societies. Please check your connection or contact the server admin.";
+        if (error.response?.status === 401) {
+          errorMessage = "Unauthorized access. Please verify your guard login credentials.";
+        } else if (error.response?.status === 404) {
+          errorMessage = "No societies available. Contact the superadmin.";
+        } else if (error.response?.status === 500) {
+          errorMessage = "Server error. Please contact the server admin.";
+        }
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    } finally {
       setLoading(false);
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (retryCount = 3) => {
     try {
       const response = await axios.get(
-        `${BASE_URL}/api/users?email=${superadminEmail}` // Fixed template literal
+        `${BASE_URL}/api/users/by-society/${selectedSociety}?email=${guardEmail}`,
+        { headers: { "Cache-Control": "no-cache" } }
       );
-      setUsers(response.data);
-      setLoading(false);
+      console.log("Fetched users for society:", selectedSociety, response.data);
+      setUsers(response.data || []);
     } catch (error) {
-      console.error("Error fetching users:", error);
-      setError("Failed to fetch user data.");
+      console.error("Error fetching users:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      if (retryCount > 0) {
+        console.log(`Retrying fetchUsers... (${retryCount} attempts left)`);
+        setTimeout(() => fetchUsers(retryCount - 1), 2000);
+      } else {
+        console.log("Failed to fetch users, but continuing without email autofill.");
+        setUsers([]);
+      }
+    }
+  };
+
+  const fetchEntries = async (retryCount = 3) => {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/entries?email=${guardEmail}`, {
+        headers: { "Cache-Control": "no-cache" },
+      });
+      console.log("Fetched entries:", response.data);
+      setEntries(response.data || []);
+      if (response.data.length === 0) {
+        console.log("No entries found for guard.");
+      }
+    } catch (error) {
+      console.error("Error fetching entries:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      if (retryCount > 0) {
+        console.log(`Retrying fetchEntries... (${retryCount} attempts left)`);
+        setTimeout(() => fetchEntries(retryCount - 1), 2000);
+      } else {
+        let errorMessage = "Failed to fetch entries. Please check your connection or contact the server admin.";
+        if (error.response?.status === 401) {
+          errorMessage = "Unauthorized access. Please verify your guard login credentials.";
+        } else if (error.response?.status === 404) {
+          errorMessage = "No entries available.";
+        } else if (error.response?.status === 500) {
+          errorMessage = "Server error. Please contact the server admin.";
+        }
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    } finally {
       setLoading(false);
     }
   };
 
-  const fetchEntries = async () => {
+  const checkExpiringPermissions = async (retryCount = 3) => {
     try {
-      const response = await axios.get(
-        `${BASE_URL}/api/entries?email=${superadminEmail}`, // Fixed template literal
-        { headers: { "Cache-Control": "no-cache" } } // Prevent caching
-      );
-      setEntries(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching entries:", error);
-      toast.error("Failed to fetch entries");
-      setLoading(false);
-    }
-  };
-
-  const checkExpiringPermissions = async () => {
-    try {
-      const res = await axios.get(`${BASE_URL}/api/entries/expiring-soon`); // Fixed template literal
+      const res = await axios.get(`${BASE_URL}/api/entries/expiring-soon?email=${guardEmail}`, {
+        headers: { "Cache-Control": "no-cache" },
+      });
+      console.log("Expiring entries:", res.data);
       if (res.data.length > 0) {
         res.data.forEach((entry) => {
-          toast.warn(`Permission for ${entry.name} is expiring soon!`); // Fixed template literal
+          toast.warn(`Permission for ${entry.name} is expiring soon!`);
         });
       }
     } catch (error) {
-      console.error("Error checking expiring permissions:", error);
-      toast.error("Failed to check expiring permissions"); // Added user feedback
+      console.error("Error checking expiring permissions:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      if (retryCount > 0) {
+        console.log(`Retrying checkExpiringPermissions... (${retryCount} attempts left)`);
+        setTimeout(() => checkExpiringPermissions(retryCount - 1), 2000);
+      } else {
+        toast.error("Failed to check expiring permissions.");
+      }
     }
   };
 
@@ -112,31 +187,20 @@ const EntryPermissionForm = () => {
   const handleFlatChange = (flatNo) => {
     setFlatNumber(flatNo);
     const user = users.find(
-      (user) =>
-        user.flatNumber === flatNo &&
-        user.society &&
-        user.society._id === selectedSociety
+      (user) => user.flatNumber === flatNo && user.society && user.society._id === selectedSociety
     );
+    console.log("Selected flat:", flatNo, "Found user:", user);
     setEmail(user ? user.email : "");
   };
 
   const handleSave = async () => {
-    if (
-      !name ||
-      !selectedSociety ||
-      !flatNumber ||
-      !visitorType ||
-      !description ||
-      !dateTime ||
-      !expiry ||
-      !status
-    ) {
+    if (!name || !selectedSociety || !flatNumber || !visitorType || !description || !dateTime || !expiry || !status) {
       toast.error("All fields are required");
       return;
     }
 
-    if (!adminEmail) {
-      toast.error("Admin email is missing. Please log in.");
+    if (!guardEmail) {
+      toast.error("Guard email is missing. Please log in.");
       return;
     }
 
@@ -145,6 +209,12 @@ const EntryPermissionForm = () => {
 
     if (entryDate >= expiryDate) {
       toast.error("Expiry date must be after entry date");
+      return;
+    }
+
+    const society = societies.find((soc) => soc._id === selectedSociety);
+    if (!society?.adminEmail) {
+      toast.error("Selected society has no associated admin. Please contact the superadmin.");
       return;
     }
 
@@ -162,13 +232,15 @@ const EntryPermissionForm = () => {
       visitorType,
       status,
       societyId: selectedSociety,
-      adminEmail,
+      adminEmail: society.adminEmail,
     };
 
-    setSaveLoading(true); // Set loading state
+    console.log("Saving entry with payload:", payload);
+
+    setSaveLoading(true);
     try {
       if (editingId) {
-        const res = await axios.put(`${BASE_URL}/api/entries/${editingId}`, payload); // Fixed template literal
+        const res = await axios.put(`${BASE_URL}/api/entries/${editingId}`, payload);
         setEntries(entries.map((entry) => (entry._id === editingId ? res.data : entry)));
         toast.success("Entry updated successfully!");
         setEditingId(null);
@@ -178,22 +250,20 @@ const EntryPermissionForm = () => {
         toast.success("Entry added successfully!");
       }
       resetForm();
-      await fetchEntries(); // Ensure UI reflects latest data
+      await fetchEntries(); // Refresh entries after save
     } catch (error) {
-      console.error("Error saving entry:", error);
-      if (error.response) {
-        const errorMessage =
-          error.response.data?.message ||
-          error.response.data?.error ||
-          `Server error: ${error.response.status}`;
-        toast.error(errorMessage);
-      } else if (error.request) {
-        toast.error("No response from server. Please check your connection.");
-      } else {
-        toast.error("Error saving entry: " + error.message);
-      }
+      console.error("Error saving entry:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        `Server error: ${error.response?.status || "Unknown"}`;
+      toast.error(errorMessage);
     } finally {
-      setSaveLoading(false); // Reset loading state
+      setSaveLoading(false);
     }
   };
 
@@ -209,15 +279,13 @@ const EntryPermissionForm = () => {
     setStatus(entry.status || "pending");
     setDescription(entry.description || "");
     setDateTime(entry.dateTime ? new Date(entry.dateTime).toISOString().slice(0, 16) : "");
-    setExpiry(
-      entry.additionalDateTime ? new Date(entry.additionalDateTime).toISOString().slice(0, 16) : ""
-    );
+    setExpiry(entry.additionalDateTime ? new Date(entry.additionalDateTime).toISOString().slice(0, 16) : "");
     setEditingId(entry._id);
   };
 
   const getSocietyId = (societyIdValue) => {
-    if (!societyIdValue) return ""; // Added null check
-    return typeof societyIdValue === "string" ? societyIdValue : societyIdValue?._id || "";
+    if (!societyIdValue) return "";
+    return typeof societyIdValue === "string" ? societyIdValue : (societyIdValue?._id?.toString() || "");
   };
 
   const handleDelete = async (id) => {
@@ -226,12 +294,16 @@ const EntryPermissionForm = () => {
     }
 
     try {
-      await axios.delete(`${BASE_URL}/api/entries/${id}`); // Fixed template literal
+      await axios.delete(`${BASE_URL}/api/entries/${id}`);
       setEntries(entries.filter((entry) => entry._id !== id));
       toast.success("Entry deleted successfully!");
-      await fetchEntries(); // Ensure UI reflects latest data
+      await fetchEntries(); // Refresh entries after delete
     } catch (error) {
-      console.error("Error deleting entry:", error);
+      console.error("Error deleting entry:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       toast.error("Error deleting entry: " + (error.response?.data?.message || error.message));
     }
   };
@@ -253,13 +325,15 @@ const EntryPermissionForm = () => {
     setEditingId(null);
   };
 
-  const filteredEntries = entries.filter(
-    (entry) =>
-      entry.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.visitorType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.flatNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEntries = entries.filter((entry) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      (entry.name || "").toLowerCase().includes(search) ||
+      (entry.visitorType || "").toLowerCase().includes(search) ||
+      (entry.status || "").toLowerCase().includes(search) ||
+      (entry.flatNumber || "").toLowerCase().includes(search)
+    );
+  });
 
   if (loading) {
     return (
@@ -278,7 +352,7 @@ const EntryPermissionForm = () => {
       <div className="entry-form-container">
         <Navbar />
         <div className="entry-card">
-          <p>{error}</p>
+          <p className="error-message">{error}</p>
         </div>
         <ToastContainer />
       </div>
@@ -292,7 +366,7 @@ const EntryPermissionForm = () => {
         <div className="entry-card">
           <div className="form-title">Entry Permission Form</div>
           <div className="entry-form-content">
-            <form className="entry-form" onSubmit={handleSave}> {/* Updated to use form submission */}
+            <form className="entry-form" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
               <label htmlFor="name">Name *</label>
               <input
                 type="text"
@@ -332,6 +406,8 @@ const EntryPermissionForm = () => {
                 required
                 aria-label="Select Flat Number"
               >
+
+
                 <option value="">Select Flat</option>
                 {flats.map((flat) => (
                   <option key={flat} value={flat}>
@@ -379,6 +455,8 @@ const EntryPermissionForm = () => {
                 <option value="pending">Pending</option>
                 <option value="allow">Allow</option>
                 <option value="deny">Deny</option>
+                <option value="checked-in">Checked In</option>
+                <option value="checked-out">Checked Out</option>
               </select>
 
               <label htmlFor="description">Description *</label>
@@ -417,9 +495,9 @@ const EntryPermissionForm = () => {
 
               <div className="decision-buttons">
                 <button
-                  type="submit" // Changed to submit to use form submission
+                  type="submit"
                   className="submit-btn"
-                  disabled={saveLoading} // Disable during save
+                  disabled={saveLoading}
                 >
                   {saveLoading ? "Saving..." : editingId ? "Update Entry" : "Add Entry"}
                 </button>
@@ -449,38 +527,36 @@ const EntryPermissionForm = () => {
               aria-label="Search entries"
               style={{ marginBottom: "20px" }}
             />
-
+            <p>Debug: Found {filteredEntries.length} entries (Total: {entries.length})</p>
             <div className="entries-list">
-              {filteredEntries.length === 0 ? (
-                <p>No entry permissions found.</p>
+              {entries.length === 0 ? (
+                <p>No entry permissions available. Add a new entry above.</p>
               ) : (
                 filteredEntries.map((entry) => (
                   <div key={entry._id} className="entry-item">
                     <div className="entry-details">
-                      <h4>{entry.name}</h4>
+                      <h4>{entry.name || "N/A"}</h4>
                       <p>
                         <strong>Society:</strong>{" "}
-                        {societies.find(
-                          (soc) => soc._id === getSocietyId(entry.societyId)
-                        )?.name || "N/A"}
+                        {(entry.societyId?.name || societies.find((soc) => soc._id === getSocietyId(entry.societyId))?.name) || "Unknown Society"}
                       </p>
-                      <p><strong>Flat Number:</strong> {entry.flatNumber}</p>
+                      <p><strong>Flat Number:</strong> {entry.flatNumber || "N/A"}</p>
                       <p><strong>Email:</strong> {entry.email || "N/A"}</p>
-                      <p><strong>Visitor Type:</strong> {entry.visitorType}</p>
+                      <p><strong>Visitor Type:</strong> {entry.visitorType || "N/A"}</p>
                       <p>
                         <strong>Status:</strong>{" "}
-                        <span className={`status-${entry.status}`}>
-                          {entry.status?.charAt(0).toUpperCase() + entry.status?.slice(1)}
+                        <span className={`status-${entry.status || "unknown"}`}>
+                          {entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "N/A"}
                         </span>
                       </p>
-                      <p><strong>Description:</strong> {entry.description}</p>
+                      <p><strong>Description:</strong> {entry.description || "N/A"}</p>
                       <p>
                         <strong>Date & Time:</strong>{" "}
-                        {new Date(entry.dateTime).toLocaleString()}
+                        {entry.dateTime ? new Date(entry.dateTime).toLocaleString() : "N/A"}
                       </p>
                       <p>
                         <strong>Expiry:</strong>{" "}
-                        {new Date(entry.additionalDateTime).toLocaleString()}
+                        {entry.additionalDateTime ? new Date(entry.additionalDateTime).toLocaleString() : "N/A"}
                       </p>
                     </div>
                     <div className="entry-actions">

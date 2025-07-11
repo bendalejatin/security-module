@@ -5,8 +5,8 @@ import "react-toastify/dist/ReactToastify.css";
 import Navbar from "./Navbar";
 import "./styles/ServiceEntryForm.css";
 
-// const BASE_URL = "http://localhost:5000";
-const BASE_URL = "https://dec-entrykart-backend.onrender.com"; // Deployment URL
+// const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
+const BASE_URL = "https://dec-entrykart-backend.onrender.com"; // deployment url
 
 const ServiceEntryForm = () => {
   const [entries, setEntries] = useState([]);
@@ -25,7 +25,6 @@ const ServiceEntryForm = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
   const guardEmail = localStorage.getItem("guardEmail");
-  const superadminEmail = "dec@gmail.com";
 
   useEffect(() => {
     if (!guardEmail) {
@@ -39,10 +38,9 @@ const ServiceEntryForm = () => {
 
   const fetchSocieties = async (retryCount = 3) => {
     try {
-      const response = await axios.get(
-        `${BASE_URL}/api/societies?email=${superadminEmail}`,
-        { headers: { "Cache-Control": "no-cache" } }
-      );
+      const response = await axios.get(`${BASE_URL}/api/societies`, {
+        headers: { "Cache-Control": "no-cache" },
+      });
       setSocieties(response.data || []);
       if (response.data.length === 0) {
         setError("No societies found. Contact the superadmin.");
@@ -57,8 +55,14 @@ const ServiceEntryForm = () => {
         console.log(`Retrying fetchSocieties... (${retryCount} attempts left)`);
         setTimeout(() => fetchSocieties(retryCount - 1), 2000);
       } else {
-        setError("Failed to fetch societies. Please check the server.");
-        console.warn("Failed to fetch societies after retries.");
+        let errorMessage = "Failed to fetch societies. Please check your connection or contact the server admin.";
+        if (error.response?.status === 401) {
+          errorMessage = "Unauthorized access. Please verify your login credentials.";
+        } else if (error.response?.status === 404) {
+          errorMessage = "No societies available. Contact the superadmin.";
+        }
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -67,13 +71,14 @@ const ServiceEntryForm = () => {
 
   const fetchEntries = async (retryCount = 3) => {
     try {
-      const response = await axios.get(
-        `${BASE_URL}/api/service-entries?adminEmail=${guardEmail}`,
-        { headers: { "Cache-Control": "no-cache" } }
-      );
+      // Fetch all service entries without filtering by guardEmail
+      const response = await axios.get(`${BASE_URL}/api/service-entries`, {
+        headers: { "Cache-Control": "no-cache" },
+      });
+      console.log("Fetched service entries:", response.data); // Debug log
       setEntries(response.data || []);
       if (response.data.length === 0) {
-        console.log("No service entries found for this guard.");
+        console.log("No service entries found for guard.");
       }
     } catch (error) {
       console.error("Error fetching service entries:", {
@@ -81,14 +86,18 @@ const ServiceEntryForm = () => {
         response: error.response?.data,
         status: error.response?.status,
       });
-      if (error.response?.status === 400) {
-        setError("Invalid request. Please check your login credentials.");
-      } else if (retryCount > 0) {
+      if (retryCount > 0) {
         console.log(`Retrying fetchEntries... (${retryCount} attempts left)`);
         setTimeout(() => fetchEntries(retryCount - 1), 2000);
       } else {
-        setError("Failed to fetch service entries. Please check the server.");
-        console.warn("Failed to fetch service entries after retries.");
+        let errorMessage = "Failed to fetch service entries. Please check your connection.";
+        if (error.response?.status === 401) {
+          errorMessage = "Unauthorized access. Please verify your login credentials.";
+        } else if (error.response?.status === 404) {
+          errorMessage = "No service entries available.";
+        }
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -118,6 +127,12 @@ const ServiceEntryForm = () => {
       return;
     }
 
+    const society = societies.find((soc) => soc._id === selectedSociety);
+    if (!society?.adminEmail) {
+      toast.error("Selected society has no associated admin. Please contact the superadmin.");
+      return;
+    }
+
     setSaveLoading(true);
     try {
       let photoData = photoPreview;
@@ -132,7 +147,7 @@ const ServiceEntryForm = () => {
         visitorType,
         description: description.trim(),
         photo: photoData,
-        adminEmail: guardEmail, // Use guardEmail as adminEmail
+        adminEmail: society.adminEmail,
         status,
       };
 
@@ -143,16 +158,21 @@ const ServiceEntryForm = () => {
         setEditingId(null);
       } else {
         const res = await axios.post(`${BASE_URL}/api/service-entries`, payload);
-        setEntries([...entries, res.data]); // Add new entry to state immediately
+        setEntries([...entries, res.data]);
         toast.success("Entry added successfully!");
       }
       resetForm();
-      await fetchEntries(); // Refresh entries after save
+      await fetchEntries();
     } catch (error) {
+      console.error("Error saving service entry:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
-        `Server error: ${error.response?.status}`;
+        `Server error: ${error.response?.status || "Unknown"}`;
       toast.error(errorMessage);
     } finally {
       setSaveLoading(false);
@@ -165,7 +185,8 @@ const ServiceEntryForm = () => {
       setEntries(entries.map((entry) => (entry._id === id ? res.data : entry)));
       toast.success("Checked in successfully!");
     } catch (error) {
-      toast.error("Error checking in");
+      console.error("Error checking in:", error);
+      toast.error("Error checking in: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -175,7 +196,8 @@ const ServiceEntryForm = () => {
       setEntries(entries.map((entry) => (entry._id === id ? res.data : entry)));
       toast.success("Checked out successfully!");
     } catch (error) {
-      toast.error("Error checking out");
+      console.error("Error checking out:", error);
+      toast.error("Error checking out: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -199,7 +221,12 @@ const ServiceEntryForm = () => {
       toast.success("Entry deleted successfully!");
       await fetchEntries();
     } catch (error) {
-      toast.error("Error deleting entry");
+      console.error("Error deleting entry:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      toast.error("Error deleting entry: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -349,6 +376,7 @@ const ServiceEntryForm = () => {
               aria-label="Search entries"
               style={{ marginBottom: "20px" }}
             />
+            <p>Debug: Found {filteredEntries.length} entries (Total: {entries.length})</p> {/* Debug info */}
             {loading ? (
               <p>Loading entries...</p>
             ) : filteredEntries.length === 0 ? (
