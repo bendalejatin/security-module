@@ -1,0 +1,145 @@
+.service-entry-form-container {
+  padding: 20px;
+  font-family: "Poppins", sans-serif;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.form-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.entry-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.entry-form-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.input-field, .select-field {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.input-field:focus, .select-field:focus {
+  border-color: #6f72f1;
+  outline: none;
+}
+
+.decision-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.submit-btn {
+  background: #6f72f1;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.submit-btn:hover {
+  transform: scale(1.05);
+}
+
+.cancel-btn {
+  background: #ccc;
+}
+
+.check-in-btn {
+  background: #4caf50;
+}
+
+.check-out-btn {
+  background: #ff9800;
+}
+
+.edit-btn {
+  background: #2196f3;
+}
+
+.delete-btn {
+  background: #ff4d4f;
+}
+
+.entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.entry-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.entry-details h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.entry-details p {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.entry-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.error-message {
+  color: #ff4d4f;
+  font-size: 14px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .service-entry-form-container {
+    padding: 10px;
+  }
+
+  .entry-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .entry-actions {
+    margin-top: 10px;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
