@@ -4,7 +4,7 @@ import "./styles/SecurityGuardLogin.css";
 // import { Navigate } from "react-router-dom";
 
 //const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
-const BASE_URL = "https://dec-entrykart-backend.onrender.com" ; // deployment url
+const BASE_URL = "https://entrykart-admin.onrender.com" ; // deployment url
 
 const SecurityGuardLogin = () => {
   const [email, setEmail] = useState("");
