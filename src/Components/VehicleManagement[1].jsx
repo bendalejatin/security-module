@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./styles/VehicleManagement.css";
 
-const BASE_URL = "http://localhost:5000";
+// const BASE_URL = "http://localhost:5000"; // Adjust this to your backend URL
+const BASE_URL = "https://dec-entrykart-backend.onrender.com"; // deployment url
 
 const VehicleManagement = () => {
   const [vehicles, setVehicles] = useState([]);
