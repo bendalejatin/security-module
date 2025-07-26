@@ -1,8 +1,10 @@
+// Components/Navbar.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Profile from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
-import AssignmentIcon from "@mui/icons-material/Assignment"; // Icon for Service Entry Form
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar"; // New icon
 import "./styles/Navbar.css";
 
 const Navbar = () => {
@@ -31,7 +33,11 @@ const Navbar = () => {
         </Link>
         <Link to="/security/service-entry" className="navbar-link">
           <AssignmentIcon />
-          <p>Service Entry</p> {/* New link for Service Entry Form */}
+          <p>Service Entry</p>
+        </Link>
+        <Link to="/security/vehicles" className="navbar-link">
+          <DirectionsCarIcon />
+          <p>Vehicle Management</p> {/* New link */}
         </Link>
         <button onClick={handleLogout} className="logout-button">
           <LogoutIcon />

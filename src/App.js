@@ -5,6 +5,7 @@ import SecurityGuardSignup from "./Components/SecurityGuardSignup";
 import EntryPermissionForm from "./Components/EntryPermissionForm";
 import GuardProfile from "./Components/GuardProfile";
 import ServiceEntryForm from "./Components/ServiceEntryForm";
+import VehicleManagement from "./Components/VehicleManagement";
 import "./App.css";
 
 const SecurityProtectedRoute = ({ children }) => {
@@ -30,6 +31,10 @@ const App = () => {
           <Route
             path="/security/service-entry"
             element={<SecurityProtectedRoute><ServiceEntryForm /></SecurityProtectedRoute>}
+          />
+          <Route
+            path="/security/vehicles"
+            element={<SecurityProtectedRoute><VehicleManagement /></SecurityProtectedRoute>} // New route
           />
           <Route path="/" element={<Navigate to="/security/login" replace />} />
           <Route path="*" element={<Navigate to="/security/login" replace />} />
